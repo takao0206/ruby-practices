@@ -40,7 +40,7 @@ puts calendar_title.center(calendar_width)
 # カレンダーの曜日を表示する。
 puts Day_of_week
 
-# カレンダーの一日とその曜日が合致するまで空白(3文字分)を入れる。
+# カレンダーの一日とその曜日が合致するまで空白を入れる。
 one_week_days = 7
 space_width = 3
 initial_space_counts = (first_day.cwday % one_week_days) * space_width
