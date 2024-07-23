@@ -1,17 +1,17 @@
 #!/usr/bin/env ruby
 
-Range_start = 1
-Range_end = 20
-Fizz_number = 3
-Buzz_number = 5
+RANGE_START = 1
+RANGE_END = 20
+FIZZ_NUMBER = 3
+BUZZ_NUMBER = 5
 
-numbers = Range_start..Range_end
+numbers = RANGE_START..RANGE_END
 numbers.each do |number|
-  if (number % Fizz_number).zero? && (number % Buzz_number).zero?
+  if (number % FIZZ_NUMBER).zero? && (number % BUZZ_NUMBER).zero?
     puts 'FizzBuzz'
-  elsif (number % Fizz_number).zero?
+  elsif (number % FIZZ_NUMBER).zero?
     puts 'Fizz'
-  elsif (number % Buzz_number).zero?
+  elsif (number % BUZZ_NUMBER).zero?
     puts 'Buzz'
   else
     puts number
