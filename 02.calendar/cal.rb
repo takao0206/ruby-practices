@@ -3,6 +3,10 @@
 require 'date'
 require 'optparse'
 
+DAY_OF_WEEK = 'Su Mo Tu We Th Fr Sa'
+ONE_WEEK_DAYS = 7
+SPACE_WIDTH = 3
+
 begin
   options = ARGV.getopts('y:m:')
 rescue OptionParser::InvalidOption
@@ -22,7 +26,6 @@ end
 first_day = Date.new(year, month, 1)
 end_day = Date.new(year, month, -1)
 
-DAY_OF_WEEK = 'Su Mo Tu We Th Fr Sa'
 # 曜日のタイトルの長さをカレンダーのサイズにする。
 calendar_width = DAY_OF_WEEK.length
 
@@ -32,16 +35,15 @@ puts calendar_title.center(calendar_width)
 
 puts DAY_OF_WEEK
 
-ONE_WEEK_DAYS = 7
-SPACE_WIDTH = 3
 initial_space_counts = (first_day.cwday % ONE_WEEK_DAYS) * SPACE_WIDTH
 print ' ' * initial_space_counts
 
 (first_day..end_day).each do |day|
+  print day.day.to_s.rjust(2)
   if day.saturday? || day == end_day
-    puts day.day.to_s.rjust(2)
+    puts
   else
-    print day.day.to_s.rjust(2) << ' '
+    print ' '
   end
 end
-print("\n")
+puts
