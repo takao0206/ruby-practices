@@ -7,7 +7,7 @@ require 'optparse'
 COLUMNS = 3
 
 def main
-  entries = Dir.entries(Dir.pwd).sort!
+  entries = Dir.entries(Dir.pwd).sort
   entries.reject! { |entry| entry.start_with?('.') }
 
   display_output(entries)
