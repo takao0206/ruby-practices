@@ -7,8 +7,9 @@ require 'optparse'
 COLUMNS = 3
 
 def main
+  options = parse_command_line_options
   entries = Dir.entries(Dir.pwd).sort
-  entries.reject! { |entry| entry.start_with?('.') } unless parse_command_line_options[:a]
+  entries.reject! { |entry| entry.start_with?('.') } unless options[:a]
 
   display_output(entries)
 end
@@ -18,7 +19,7 @@ end
 # @return [Hash] 解析されたオプションがキーと値のペアでハッシュとして返される。
 #                例えば、`-a` オプションが指定された場合、 `{ a: true }` が返される。
 #                オプションが指定されない場合、デフォルトで `{ a: false }` が返される。
-#                また、無効なオプションが指定された場合は、エラーメッセージを表示し、プログラムを終了する。
+#                また、無効なオプションが指定された場合は、エラーメッセージを表示し、`{ a: false }`が返される。
 def parse_command_line_options
   options = { a: false }
 
@@ -28,9 +29,8 @@ def parse_command_line_options
   begin
     opts.parse(ARGV)
   rescue OptionParser::InvalidOption
-    puts '指定されたオプションは無効です。以下、有効なオプションです。'
-    puts '  -a   .から始まるエントリも表示できます。'
-    exit 1
+    puts 'Invalid Option'
+    puts opts.help
   end
 
   options
