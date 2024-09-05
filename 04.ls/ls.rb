@@ -7,10 +7,33 @@ require 'optparse'
 COLUMNS = 3
 
 def main
+  options = parse_command_line_options
   entries = Dir.entries(Dir.pwd).sort
-  entries.reject! { |entry| entry.start_with?('.') }
+  entries.reject! { |entry| entry.start_with?('.') } unless options[:a]
 
   display_output(entries)
+end
+
+# コマンドラインから指定されたオプションを解析し、取得する。
+#
+# @return [Hash] 解析されたオプションがキーと値のペアでハッシュとして返される。
+#                例えば、`-a` オプションが指定された場合、 `{ a: true }` が返される。
+#                オプションが指定されない場合、デフォルトで `{ a: false }` が返される。
+#                また、無効なオプションが指定された場合は、エラーメッセージを表示し、`{ a: false }`が返される。
+def parse_command_line_options
+  options = { a: false }
+
+  opts = OptionParser.new
+  opts.on('-a', 'do not ignore entries starting with .') { options[:a] = true }
+
+  begin
+    opts.parse(ARGV)
+  rescue OptionParser::InvalidOption
+    puts 'Invalid Option'
+    puts opts.help
+  end
+
+  options
 end
 
 # 列幅を整えたファイルエントリをマトリクスで表示する。
