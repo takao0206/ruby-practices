@@ -19,7 +19,7 @@ end
 # @return [Hash] 解析されたオプションがキーと値のペアでハッシュとして返される。
 #                例えば、`-a` オプションが指定された場合、 `{ a: true }` が返される。
 #                オプションが指定されない場合、デフォルトで `{ a: false }` が返される。
-#                また、無効なオプションが指定された場合は、エラーメッセージを表示し、`{ a: false }`が返される。
+#                また、無効なオプションが指定された場合は、エラーメッセージを表示し、プログラムを終了する。
 def parse_command_line_options
   options = { a: false }
 
@@ -31,6 +31,7 @@ def parse_command_line_options
   rescue OptionParser::InvalidOption
     puts 'Invalid Option'
     puts opts.help
+    exit 1
   end
 
   options
