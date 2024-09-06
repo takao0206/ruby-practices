@@ -10,6 +10,7 @@ def main
   options = parse_command_line_options
   entries = Dir.entries(Dir.pwd).sort
   entries.reject! { |entry| entry.start_with?('.') } unless options[:a]
+  entries.reverse! if options[:r]
 
   display_output(entries)
 end
@@ -21,10 +22,12 @@ end
 #                オプションが指定されない場合、デフォルトで `{ a: false }` が返される。
 #                また、無効なオプションが指定された場合は、エラーメッセージを表示し、プログラムを終了する。
 def parse_command_line_options
-  options = { a: false }
+  options = { a: false, r: false }
 
-  opts = OptionParser.new
-  opts.on('-a', 'do not ignore entries starting with .') { options[:a] = true }
+  opts = OptionParser.new do |opt|
+    opt.on('-a', 'do not ignore entries starting with .') { options[:a] = true }
+    opt.on('-r', 'reserse order while sorting') { options[:r] = true }
+  end
 
   begin
     opts.parse(ARGV)
