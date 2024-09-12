@@ -8,9 +8,7 @@ COLUMNS = 3
 
 def main
   options = parse_command_line_options
-  entries = Dir.entries(Dir.pwd).sort
-  entries.reject! { |entry| entry.start_with?('.') } unless options[:a]
-  entries.reverse! if options[:r]
+  entries = fetch_file_entries(options[:a], options[:r])
 
   display_output(entries)
 end
@@ -38,6 +36,20 @@ def parse_command_line_options
   end
 
   options
+end
+
+# オプションに基づいてエントリを表示する。
+#
+# @param show_all [Boolean] ドットで始まるファイルやディレクトリを表示するかどうかを指定する。
+# @param reverse_order [Boolean] エントリを逆順にソートするかどうかを指定する。
+# @return [Array] 取得されたディレクトリエントリの配列が返される。
+#                 オプションに応じてフィルタリングとソートが適用される。
+#                 例えば、`show_all` が `true` の場合はすべてのエントリが含まれる。
+def fetch_file_entries(show_all, reverse_order)
+  entries = Dir.entries(Dir.pwd).sort
+  entries.reject! { |entry| entry.start_with?('.') } unless show_all
+  entries.reverse! if reverse_order
+  entries
 end
 
 # 列幅を整えたファイルエントリをマトリクスで表示する。
