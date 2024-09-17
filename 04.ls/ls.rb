@@ -13,14 +13,13 @@ def main
 
   if options[:l]
     display_total_block_kbyte(entries)
+    file_details = build_file_details(entries)
 
-    max_col_lengths = entry_lstats.transpose.map do |col|
+    max_col_lengths = file_details.transpose.map do |col|
       col.map { |item| item.to_s.length }.max
     end
 
-    entry_lstats = build_entry_lstats(entries)
-
-    display_output_for_option_l(entry_lstats, max_col_lengths)
+    display_output_for_option_l(file_details, max_col_lengths)
   else
     display_output(entries)
   end
@@ -83,31 +82,31 @@ end
 #
 # @param entries [Array] ファイルエントリ
 # @return [Array] 各ファイルエントリの詳細情報
-def build_entry_lstats(entries)
-  entry_lstats = []
+def build_file_details(entries)
+  file_details = []
 
   entries.each do |entry|
-    entry_lstat = File.lstat(File.join(Dir.pwd, entry))
+    entry_stat = File.lstat(File.join(Dir.pwd, entry))
 
-    entry_lstats << [
-      file_type_char(entry_lstat.ftype),
-      change_permission_octal_to_rwx(entry_lstat.mode.to_s(8)[-3..].chars),
-      entry_lstat.nlink,
-      Etc.getpwuid(entry_lstat.uid).name,
-      Etc.getgrgid(entry_lstat.gid).name,
-      entry_lstat.size,
-      entry_lstat.mtime.strftime('%b %d %H:%M'),
-      entry_lstat.symlink? ? "#{entry} -> #{File.readlink(entry_lstat)}" : entry
+    file_details << [
+      convert_filetype_to_char(entry_stat.ftype),
+      convert_octal_to_rwx(entry_stat.mode.to_s(8)[-3..].chars),
+      entry_stat.nlink,
+      Etc.getpwuid(entry_stat.uid).name,
+      Etc.getgrgid(entry_stat.gid).name,
+      entry_stat.size,
+      entry_stat.mtime.strftime('%b %d %H:%M'),
+      entry_stat.symlink? ? "#{entry} -> #{File.readlink(entry_stat)}" : entry
     ]
   end
-  entry_lstats
+  file_details
 end
 
-# ファイルタイプを文字で表現する。
+# ファイルタイプを1文字で表現する。
 #
 # @param ftype [String] ファイルタイプ
-# @return [String] ファイルタイプを示す文字
-def file_type_char(ftype)
+# @return [String] ファイルタイプを示す1文字
+def convert_filetype_to_char(ftype)
   case ftype
   when 'file' then '-'
   when 'fifo' then 'p'
@@ -117,9 +116,9 @@ end
 
 # オクタル表記のパーミッションを rwx 表記に変換する。
 #
-# @param octal_array [Array] 各文字は '0' から '7' のいずれか
+# @param octal_permissions [Array] 各文字は '0' から '7' のいずれか
 # @return [String] rwx 表記に変換されたパーミッションの文字列
-def change_permission_octal_to_rwx(octal_array)
+def convert_octal_to_rwx(octal_permissions)
   permissions_map = {
     '7' => 'rwx',
     '6' => 'rw-',
@@ -131,7 +130,7 @@ def change_permission_octal_to_rwx(octal_array)
     '0' => '---'
   }
 
-  octal_array.map { |octal| permissions_map[octal] || '???' }.join
+  octal_permissions.map { |octal| permissions_map[octal] || '???' }.join
 end
 
 # 列幅を整えたファイルエントリをマトリクスで表示する。
@@ -154,17 +153,17 @@ end
 
 # 列幅を整えたマトリックスで表示する。オプション-l用
 #
-# @param entry_lstats [Array] 出力表示に使われる各ファイルの情報
+# @param file_details [Array] 出力表示に使われる各ファイルの情報
 # @param col_lengths [Array] 出力表示の各列の長さ
-def display_output_for_option_l(entry_lstats, max_col_lengths)
-  entry_lstats.each do |row|
-    row.each_with_index do |entry_lstat, index|
+def display_output_for_option_l(file_details, max_col_lengths)
+  file_details.each do |row|
+    row.each_with_index do |file_detail, index|
       if index.zero?
-        print entry_lstat.to_s.ljust(max_col_lengths[index])
-      elsif entry_lstat.is_a?(Numeric)
-        print "#{entry_lstat.to_s.rjust(max_col_lengths[index])} "
+        print file_detail.to_s.ljust(max_col_lengths[index])
+      elsif file_detail.is_a?(Numeric)
+        print "#{file_detail.to_s.rjust(max_col_lengths[index])} "
       else
-        print "#{entry_lstat.to_s.ljust(max_col_lengths[index])} "
+        print "#{file_detail.to_s.ljust(max_col_lengths[index])} "
       end
     end
     puts
