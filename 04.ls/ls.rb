@@ -6,6 +6,7 @@ require 'etc'
 
 # ls で表示されるエントリは3列にする
 COLUMNS = 3
+KBYTE_PER_BLOCK = 512 / 1024.to_f
 
 def main
   options = parse_command_line_options
@@ -15,11 +16,12 @@ def main
     display_total_block_kbyte(entries)
     file_details = build_file_details(entries)
 
-    max_col_lengths = file_details.transpose.map do |col|
-      col.map { |item| item.to_s.length }.max
+    max_col_lengths = {}
+    file_details[0].each_key do |key|
+      max_col_lengths[key] = file_details.map { |item| item[key].to_s.length }.max
     end
 
-    display_output_for_option_l(file_details, max_col_lengths)
+    display_in_long_format(file_details, max_col_lengths)
   else
     display_output(entries)
   end
@@ -70,15 +72,13 @@ end
 # @param entries [Array] ファイルエントリ
 # @return [Integer] カレントディレクトリ内の全容量（キロバイト）
 def display_total_block_kbyte(entries)
-  kbyte_per_block = 512 / 1024.to_f
-
   total_kbytes = entries.map do |entry|
-    (File.lstat(File.join(Dir.pwd, entry)).blocks * kbyte_per_block).floor
+    (File.lstat(File.join(Dir.pwd, entry)).blocks * KBYTE_PER_BLOCK).floor
   end.compact.sum
   puts "total #{total_kbytes}"
 end
 
-# 各ファイルエントリの詳細情報を配列で返す。
+# 各ファイルエントリの詳細情報（ハッシュ）を配列で返す。
 #
 # @param entries [Array] ファイルエントリ
 # @return [Array] 各ファイルエントリの詳細情報
@@ -88,16 +88,16 @@ def build_file_details(entries)
   entries.each do |entry|
     entry_stat = File.lstat(File.join(Dir.pwd, entry))
 
-    file_details << [
-      convert_filetype_to_char(entry_stat.ftype),
-      convert_octal_to_rwx(entry_stat.mode.to_s(8)[-3..].chars),
-      entry_stat.nlink,
-      Etc.getpwuid(entry_stat.uid).name,
-      Etc.getgrgid(entry_stat.gid).name,
-      entry_stat.size,
-      entry_stat.mtime.strftime('%b %d %H:%M'),
-      entry_stat.symlink? ? "#{entry} -> #{File.readlink(entry_stat)}" : entry
-    ]
+    file_details << {
+      type: convert_filetype_to_char(entry_stat.ftype),
+      permissions: convert_octal_to_rwx(entry_stat.mode.to_s(8).slice(-4, 4).chars),
+      nlink: entry_stat.nlink,
+      user: Etc.getpwuid(entry_stat.uid).name,
+      group: Etc.getgrgid(entry_stat.gid).name,
+      size: entry_stat.size,
+      mtime: entry_stat.mtime.strftime('%b %d %H:%M'),
+      name: entry_stat.symlink? ? "#{entry} -> #{File.readlink(entry)}" : entry
+    }
   end
   file_details
 end
@@ -114,10 +114,10 @@ def convert_filetype_to_char(ftype)
   end
 end
 
-# オクタル表記のパーミッションを rwx 表記に変換する。
+# オクタル表記のパーミッションを rwx 表記 (特殊ビット含む) に変換する。
 #
 # @param octal_permissions [Array] 各文字は '0' から '7' のいずれか
-# @return [String] rwx 表記に変換されたパーミッションの文字列
+# @return [String] rwx 表記 (特殊ビットはs, S, t, T) に変換されたパーミッションの文字列
 def convert_octal_to_rwx(octal_permissions)
   permissions_map = {
     '7' => 'rwx',
@@ -130,7 +130,30 @@ def convert_octal_to_rwx(octal_permissions)
     '0' => '---'
   }
 
-  octal_permissions.map { |octal| permissions_map[octal] || '???' }.join
+  special_bit = octal_permissions[0].to_i
+  user_rwx = permissions_map[octal_permissions[1]]
+  group_rwx = permissions_map[octal_permissions[2]]
+  other_rwx = permissions_map[octal_permissions[3]]
+
+  user_rwx = transform_special_bit(user_rwx, special_bit & 4 != 0, 's', 'S')
+  group_rwx = transform_special_bit(group_rwx, special_bit & 2 != 0, 's', 'S')
+  other_rwx = transform_special_bit(other_rwx, special_bit & 1 != 0, 't', 'T')
+  "#{user_rwx}#{group_rwx}#{other_rwx}"
+end
+
+# 特殊ビットの変換を行う
+#
+# @param rwx [String] 標準の rwx 表記
+# @param condition [Boolean] 特殊ビットの条件が真かどうか
+# @param set [String] x の場合の置換文字
+# @param unset [String] x 以外の文字の場合の置換文字
+# @return [String] 変換後の rwx 表記
+def transform_special_bit(rwx, condition, set, unset)
+  if condition
+    rwx[0...-1] + (rwx[-1] == 'x' ? set : unset)
+  else
+    rwx
+  end
 end
 
 # 列幅を整えたファイルエントリをマトリクスで表示する。
@@ -151,21 +174,20 @@ def display_output(entries)
   puts output_matrix.map { |array| array.join(' ') }.join("\n")
 end
 
-# 列幅を整えたマトリックスで表示する。オプション-l用
+# ファイルエントリの詳細情報を列幅を揃えてマトリックスで表示する。
 #
-# @param file_details [Array] 出力表示に使われる各ファイルの情報
-# @param col_lengths [Array] 出力表示の各列の長さ
-def display_output_for_option_l(file_details, max_col_lengths)
-  file_details.each do |row|
-    row.each_with_index do |file_detail, index|
-      if index.zero?
-        print file_detail.to_s.ljust(max_col_lengths[index])
-      elsif file_detail.is_a?(Numeric)
-        print "#{file_detail.to_s.rjust(max_col_lengths[index])} "
-      else
-        print "#{file_detail.to_s.ljust(max_col_lengths[index])} "
-      end
-    end
+# @param file_details [Hash] 出力表示に使われる各ファイルの情報
+# @param col_lengths [Hash] 出力表示の各列の長さ
+def display_in_long_format(file_details, max_col_lengths)
+  file_details.each do |file_detail|
+    print file_detail[:type],
+          file_detail[:permissions].to_s.ljust(max_col_lengths[:permissions]), ' ',
+          file_detail[:nlink].to_s.rjust(max_col_lengths[:nlink]), ' ',
+          file_detail[:user].to_s.ljust(max_col_lengths[:user]), ' ',
+          file_detail[:group].to_s.ljust(max_col_lengths[:group]), ' ',
+          file_detail[:size].to_s.rjust(max_col_lengths[:size]), ' ',
+          file_detail[:mtime].to_s.ljust(max_col_lengths[:mtime]), ' ',
+          file_detail[:name].to_s.ljust(max_col_lengths[:name])
     puts
   end
 end
