@@ -10,11 +10,21 @@ def main
   totals = { line_counts: 0, word_counts: 0, byte_counts: 0 }
 
   options = parse_command_line[:options]
-  paths = parse_command_line[:args].empty? ? [$stdin.read] : parse_command_line[:args]
-  column_width = calculate_column_width(paths, totals)
+  paths = parse_command_line[:args]
 
-  print_each_content_size(paths, options, column_width)
-  print_totals(totals, options, column_width) if paths.size > 1
+  if paths.empty?
+    print_text_size([$stdin.read], options)
+  else
+    column_width =
+      if paths.any? { |path| File.directory?(path) }
+        MAX_COLUMN_WIDTH
+      else
+        calculate_column_width(paths, totals) || 0
+      end
+
+    print_entry_size(paths, options, column_width)
+    print_totals(totals, options, column_width) if paths.size > 1
+  end
 end
 
 # コマンドラインからオプションと引数を解析し、取得する。
@@ -48,32 +58,40 @@ def parse_command_line
   { options:, args: }
 end
 
-# 指定されたパスに対して、行数、文字数、バイト数の最大列幅を計算する。
-# ディレクトリや存在しないファイルの場合は、最大列幅（`MAX_COLUMN_WIDTH`）を使用する。
+# ファイルパスに対して、各アイテム（行数、文字数、バイト数）の最大列幅を計算する。
 #
-# @param [Array] paths ファイルまたはディレクトリのパスの配列
-# @param [Hash] totals 現在までの累積値を含むハッシュ
-# @return [Integer] 各パスに基づいて計算された最大列幅
-def calculate_column_width(paths, totals)
-  paths.map do |path|
-    if File.file?(path)
-      item_length = calculate_content_size(extract_content(path))
+# @param [Array] filepaths ファイルパス
+# @param [Hash] totals 各アイテムの累積値
+# @return [Integer] 最大列幅
+def calculate_column_width(filepaths, totals)
+  filepaths.map do |filepath|
+    next unless File.file?(filepath)
 
-      totals[:line_counts] += item_length[:line_counts]
-      totals[:word_counts] += item_length[:word_counts]
-      totals[:byte_counts] += item_length[:byte_counts]
+    item_length = calculate_content_size(extract_content(filepath))
 
-      totals.values.map { |item| item.to_s.length }.max
-    else
-      MAX_COLUMN_WIDTH
-    end
-  end.max
+    totals[:line_counts] += item_length[:line_counts]
+    totals[:word_counts] += item_length[:word_counts]
+    totals[:byte_counts] += item_length[:byte_counts]
+
+    totals.values.map { |item| item.to_s.length }.max
+  end.compact.max
 end
 
-# 入力されたパスに対して、行数、文字数、バイト数を返す。
+# 入力されたパスの内容を取得する。
 #
-# @param [String] パス
-# @return [Hash] 行数、文字数、バイト数を返す。
+# @param [String] path パス
+# @return [String] ファイルパスが入力されれば、その中身を出力する。
+# @return [String] ディレクトリパスが入力されれば、''(EMPTY_OUTPUT)を出力する。
+def extract_content(path)
+  return File.read(path) if File.file?(path)
+
+  EMPTY_OUTPUT if File.directory?(path)
+end
+
+# 入力されたパスに対して、行数、文字数、バイト数を計算する。
+#
+# @param [String] path パス
+# @return [Hash] 行数、文字数、バイト数を計算する。
 def calculate_content_size(path)
   {
     line_counts: path.count("\n"),
@@ -82,21 +100,21 @@ def calculate_content_size(path)
   }
 end
 
-# 入力されたパスに対して、行数、文字数、バイト数を計算し、
-# コマンドラインから取得したオプションに合わせてアイテム（行数、文字数、バイト数）を選択し、
-# 各アイテムの列幅を整えて出力する。
-# もしパスが存在しない場合は、エラーメッセージを出力する。
+# 各アイテムの列幅を整えて出力する。もしパスが存在しない場合は、エラーメッセージを出力する。
 #
-# @param [Array] paths 出力対象のファイルまたはディレクトリのパスの配列
-# @param [Hash] options コマンドラインから指定されたオプション
-# @param [Integer] column_width 各wcのアイテムを整形するための列幅
-def print_each_content_size(paths, options, column_width)
+# @param [Array] paths ファイルまたはディレクトリのパス
+# @param [Hash] options コマンドラインのオプション
+# @param [Integer] column_width 列幅
+def print_entry_size(paths, options, column_width)
   paths.each do |path|
-    if File.exist?(path)
+    if File.file?(path) || File.directory?(path)
       calculated_items = calculate_content_size(extract_content(path))
       selected_items = select_items(calculated_items, options)
 
-      justified_items = justify_items(selected_items, column_width, path)
+      justified_items = justify_items(selected_items, paths, options, column_width)
+      justified_items << path
+
+      puts "wc: #{path}: Is a directory" if File.directory?(path)
       puts justified_items.join(' ')
     else
       puts "wc: #{path}: No such file or directory"
@@ -104,45 +122,48 @@ def print_each_content_size(paths, options, column_width)
   end
 end
 
-# パスの内容を取得する。
-#
-# @param [String] ファイルやディレクトリのパス、またはテキスト
-# @return [String] ファイルパスが入力されれば、その中身を出力する。
-# @return [String] ディレクトリパスが入力されれば、''(EMPTY_OUTPUT)を出力する。
-# @return [String] テキストが入力されれば、そのまま出力する。
-def extract_content(path)
-  return File.read(path) if File.file?(path)
-
-  if File.directory?(path)
-    puts "wc: #{path}: Is a directory"
-    return EMPTY_OUTPUT
-  end
-
-  path
-end
-
-# パスのアイテム（行数、文字数、バイト数）の列幅を整える。
+# 条件に従い、アイテム（行数、文字数、バイト数）を揃える
 #
 # @param [Hash] items アイテム
-# @param [Integer] column_width アイテムの列幅
-# @param [String] path ファイルまたはディレクトリのパス
-# @return [Array] 列幅を整えたアイテム
-def justify_items(items, column_width, path)
-  if File.file?(path) || File.directory?(path)
-    justified_items = items.values.map { |item| item.to_s.rjust(column_width) }
-    justified_items << path
-  else
-    justified_items = selected_items.values.map do |item|
-      item.to_s.send(selected_items.size == 1 ? :ljust : :rjust, column_width)
+# @param [Array] paths パス
+# @param [Array] options コマンドラインの引数
+# @param [Integer] column_width 列幅
+# @return [Array] 列幅を揃えたアイテム
+def justify_items(items, paths, options, column_width)
+  items.values.map do |item|
+    if paths.size > 1
+      item.to_s.rjust(column_width)
+    elsif options.values.count(true) != 1
+      item.to_s.rjust(column_width)
+    else
+      item.to_s
     end
   end
-  justified_items
+end
+
+# テキストに対して、各アイテムの列幅を整えて出力する。
+#
+# @param [Array] text テキスト
+# @param [Hash] options コマンドラインのオプション
+def print_text_size(text, options)
+  calculated_items = calculate_content_size(text.first)
+  selected_items = select_items(calculated_items, options)
+
+  justified_items = selected_items.values.map do |item|
+    if options.values.count(true) == 1
+      item.to_s
+    else
+      item.to_s.rjust(MAX_COLUMN_WIDTH)
+    end
+  end
+
+  puts justified_items.join(' ')
 end
 
 # コマンドライン引数のオプションに従いアイテム（行数、文字数、バイト数）を出力する。
 #
 # @param [Hash] items アイテム
-# @param [Hash] options コマンドライン引数
+# @param [Hash] options コマンドラインで指定されたオプション
 # @return [Hash] 選択されたアイテムを出力する。オプションの指定がない場合、全てのアイテムを出力する。
 def select_items(items, options)
   selected_items = {}
@@ -156,15 +177,17 @@ def select_items(items, options)
   selected_items
 end
 
-# 各アイテム（行数、文字数、バイト数）の合計値を、列幅を整えて出力する。
+# 各アイテム（行数、文字数、バイト数）の合計値を、列幅を揃えて出力する。
 #
 # @param [Hash] totals 各アイテムの合計値
-# @param [Hash] options コマンドラインから指定されたオプション
+# @param [Hash] options コマンドラインのオプション
 # @param [Integer] column_width 各アイテムの列幅
 def print_totals(totals, options, column_width)
   selected_total_items = select_items(totals, options)
+
   justified_total_items = selected_total_items.values.map { |item| item.to_s.rjust(column_width) }
   justified_total_items << 'total'
+
   puts justified_total_items.join(' ')
 end
 
