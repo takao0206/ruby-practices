@@ -9,17 +9,20 @@ EMPTY_OUTPUT = ''
 def main
   totals = { line_counts: 0, word_counts: 0, byte_counts: 0 }
 
-  options = parse_command_line[:options]
-  paths = parse_command_line[:args]
+  command_line_items = parse_command_line
+  options = command_line_items[:options]
+  paths = command_line_items[:args]
 
   if paths.empty?
     print_text_size([$stdin.read], options)
   else
+    totals = calculate_totals(paths, totals)
+
     column_width =
       if paths.any? { |path| File.directory?(path) }
         MAX_COLUMN_WIDTH
       else
-        calculate_column_width(paths, totals) || 0
+        totals.values.map { |counts_item| counts_item.to_s.length }.max
       end
 
     print_entry_size(paths, options, column_width)
@@ -58,13 +61,13 @@ def parse_command_line
   { options:, args: }
 end
 
-# ファイルパスに対して、各アイテム（行数、文字数、バイト数）の最大列幅を計算する。
+# 各アイテム（行数、文字数、バイト数）に対して、全ファイルパスの合計値を計算する。
 #
+# @param [Hash] totals 各アイテムの合計値
 # @param [Array] filepaths ファイルパス
-# @param [Hash] totals 各アイテムの累積値
-# @return [Integer] 最大列幅
-def calculate_column_width(filepaths, totals)
-  filepaths.map do |filepath|
+# @return [Hash] totals 全ファイルパスの各アイテムの合計値
+def calculate_totals(filepaths, totals)
+  filepaths.each do |filepath|
     next unless File.file?(filepath)
 
     item_length = calculate_content_size(extract_content(filepath))
@@ -72,9 +75,8 @@ def calculate_column_width(filepaths, totals)
     totals[:line_counts] += item_length[:line_counts]
     totals[:word_counts] += item_length[:word_counts]
     totals[:byte_counts] += item_length[:byte_counts]
-
-    totals.values.map { |item| item.to_s.length }.max
-  end.compact.max
+  end
+  totals
 end
 
 # 入力されたパスの内容を取得する。
@@ -95,7 +97,7 @@ end
 def calculate_content_size(path)
   {
     line_counts: path.count("\n"),
-    word_counts: path.split(/[\s\u3000]/).count { |element| !element.empty? },
+    word_counts: path.split(/[[:space:]]/).count { |element| !element.empty? },
     byte_counts: path.bytesize
   }
 end
