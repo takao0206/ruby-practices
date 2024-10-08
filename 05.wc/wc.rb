@@ -7,8 +7,6 @@ MAX_COLUMN_WIDTH = 7
 EMPTY_OUTPUT = ''
 
 def main
-  totals = { line_counts: 0, word_counts: 0, byte_counts: 0 }
-
   command_line_items = parse_command_line
   options = command_line_items[:options]
   paths = command_line_items[:args]
@@ -16,7 +14,7 @@ def main
   if paths.empty?
     print_text_size([$stdin.read], options)
   else
-    totals = calculate_totals(paths, totals)
+    totals = calculate_totals(paths)
 
     column_width =
       if paths.any? { |path| File.directory?(path) }
@@ -63,10 +61,10 @@ end
 
 # 各アイテム（行数、文字数、バイト数）に対して、全ファイルパスの合計値を計算する。
 #
-# @param [Hash] totals 各アイテムの合計値
 # @param [Array] filepaths ファイルパス
 # @return [Hash] totals 全ファイルパスの各アイテムの合計値
-def calculate_totals(filepaths, totals)
+def calculate_totals(filepaths)
+  totals = { line_counts: 0, word_counts: 0, byte_counts: 0 }
   filepaths.each do |filepath|
     next unless File.file?(filepath)
 
