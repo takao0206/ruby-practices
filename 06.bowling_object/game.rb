@@ -48,10 +48,10 @@ class Game
   end
 
   def strike_score(frame_index)
-    frames[frame_index].first_shot.score + frames[frame_index + 1].first_shot.score + bonus_score(frame_index)
+    frames[frame_index].first_shot.score + frames[frame_index + 1].first_shot.score + strike_bonus_score(frame_index)
   end
 
-  def bonus_score(frame_index)
+  def strike_bonus_score(frame_index)
     if frame_index == 8
       frames[frame_index + 1].second_shot.score
     else
