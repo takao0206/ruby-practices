@@ -37,7 +37,7 @@ classDiagram
     class LongList {
         -KBYTE_PER_BLOCK: Float
         -kbyte_per_block: Float
-        +format_tota_block_kbyte(): String
+        +format_total_block_kbyte(): String
         +format(): String
         -calculate_total_block_kbyte(entries: Array): Integer
         -calculate_entry_block_kbyte(entry: String): Integer

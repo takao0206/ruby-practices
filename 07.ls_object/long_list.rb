@@ -11,7 +11,7 @@ class LongList < List
     @kbyte_per_block = KBYTE_PER_BLOCK
   end
 
-  def format_tota_block_kbyte
+  def format_total_block_kbyte
     "total #{calculate_total_block_kbyte(@entries)}"
   end
 

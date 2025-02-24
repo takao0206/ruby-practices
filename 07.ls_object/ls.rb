@@ -41,7 +41,7 @@ class Ls
   end
 
   def display_long_list(entries)
-    puts LongList.new(entries).format_tota_block_kbyte
+    puts LongList.new(entries).format_total_block_kbyte
     entry_details = create_entry_details(entries)
     puts LongList.new(entry_details).format
   end
