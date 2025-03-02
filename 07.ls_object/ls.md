@@ -27,8 +27,10 @@ classDiagram
     class ShortList {
         -COLUMNS: Integer
         +format(): String
-        -calculate_max_name_length(entries: Array): Integer
-        -build_list(rows: Integer, entries: Array, max_entry_length: Integer): Array
+        -build_list(rows: Integer, entries: Array): Array
+        -create_list(rows：Integer, entries: Array): Array
+        -format_list(list: Array): Array
+        -calculate_column_max_lengths(list: Array): Integer
         -list_to_string(list: Array): String
     }
     class LongList {

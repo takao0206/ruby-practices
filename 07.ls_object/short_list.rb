@@ -7,7 +7,7 @@ class ShortList < List
 
   def format
     rows = (entries.size.to_f / COLUMNS).ceil
-    list = build_list(rows, entries, calculate_max_name_length(entries))
+    list = build_list(rows, entries)
     list_to_string(list)
   end
 
@@ -15,20 +15,40 @@ class ShortList < List
 
   COLUMNS = 3
 
-  def calculate_max_name_length(entries)
-    entries.map(&:length).max
+  def build_list(rows, entries)
+    list = create_list(rows, entries)
+    format_list(list)
   end
 
-  def build_list(rows, entries, max_entry_length)
+  def create_list(rows, entries)
     list = Array.new(rows) { [] }
     entries.each_with_index do |entry, index|
       col, row = index.divmod(rows)
-      list[row][col] = entry.ljust(max_entry_length)
+      list[row][col] = entry
     end
     list
   end
 
+  def format_list(list)
+    col_max_lengths = calculate_column_max_lengths(list)
+    list.map do |row|
+      row.map.with_index do |entry, col|
+        entry ? entry.ljust(col_max_lengths[col]) : ''.ljust(col_max_lengths[col])
+      end
+    end
+  end
+
+  def calculate_column_max_lengths(list)
+    col_max_lengths = Array.new(COLUMNS, 0)
+    list.each do |row|
+      row.each_with_index do |entry, col|
+        col_max_lengths[col] = [col_max_lengths[col], entry.size].max if entry
+      end
+    end
+    col_max_lengths
+  end
+
   def list_to_string(list)
-    list.map { |row| row.join(' ') }.join("\n")
+    list.map { |row| row.join('  ') }.join("\n")
   end
 end
