@@ -66,8 +66,9 @@ classDiagram
         -transform_special_bit(rwx: String, has_special_bit: Boolean, set: String, unset: String): String
         -format_mtime(mtime: Time): String
     }
-    Ls --> Option : uses
-    Ls --> List : uses
+    LsCommand --> Option : uses
+    LsCommand --> ShortList : uses
+    LsCommand --> LongList : uses
     ShortList --|> List : extends
     LongList --|> List : extends
     LongList --> Entry : uses
