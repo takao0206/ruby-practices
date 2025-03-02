@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require_relative 'option'
-require_relative 'option_error_handler'
 require_relative 'list'
 require_relative 'entry'
 require_relative 'short_list'
@@ -11,22 +10,16 @@ require_relative 'long_list'
 class Ls
   def initialize(args)
     @args = args
-    @option = Option.new
+    @option = Option.new(args)
+    @option.is_all
   end
 
   def run
-    parse_options
     entries = fetch_and_sort_entries
     display_list(entries)
-  rescue OptionParser::InvalidOption => e
-    OptionErrorHandler.handle_error(e, @option.cli_opts)
   end
 
   private
-
-  def parse_options
-    @option.parse(@args)
-  end
 
   def fetch_and_sort_entries
     List.new.fetch_and_sort(@option.is_all, @option.is_reverse)

@@ -4,7 +4,6 @@ classDiagram
         -args: Array
         -option: Option
         +run(): String
-        -parse_options(): Option
         -fetch_and_sort_entries(): Array
         -display_list(entries: Array)
         -display_long_list(entries: Array)
@@ -12,14 +11,13 @@ classDiagram
         -display_short_list(entries: Array)
     }
     class Option {
-        +all: Boolean
-        +reverse: Boolean
-        +long: Boolean
-        +cli_opts: OptionParser
-        +parse(args: Array): OptionPaser
-    }
-    class OptionErrorHandler {
-        +handle_error(e: Exception, cli_opts: OptionParser): String
+        -all: Boolean
+        -reverse: Boolean
+        -long: Boolean
+        +all(): Boolean
+        +reverse(): Boolean
+        +long(): Boolean
+        -parse(args: Array): OptionPaser
     }
     class List {
         -entries: Array
@@ -45,14 +43,22 @@ classDiagram
         -format_entry_details(entry_details: Array, max_col_lengths: Hash): String
     }
     class Entry {
-        +type: String
-        +permissions: String
-        +nlink: Integer
-        +user: String
-        +group: String
-        +size: Integer
-        +mtime: String
-        +name: String
+        -type: String
+        -permissions: String
+        -nlink: Integer
+        -user: String
+        -group: String
+        -size: Integer
+        -mtime: String
+        -name: String
+        +type(): String
+        +permissions(): String
+        +nlink(): Integer
+        +user(): String
+        +group(): String
+        +size(): Integer
+        +mtime(): String
+        +name(): String
         +load_details(): String
         +to_h(): Hash
         -convert_filetype_to_char(ftype: String): String
@@ -61,7 +67,6 @@ classDiagram
         -format_mtime(mtime: Time): String
     }
     Ls --> Option : uses
-    Ls --> OptionErrorHandler : uses
     Ls --> List : uses
     ShortList --|> List : extends
     LongList --|> List : extends
