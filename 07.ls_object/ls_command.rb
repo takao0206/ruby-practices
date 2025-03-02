@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 class LsCommand
@@ -9,39 +8,22 @@ class LsCommand
   end
 
   def run
-    entries = fetch_and_sort_entries
-    display_list(entries)
+    if @option.is_long
+      display_long_list
+    else
+      display_short_list
+    end
   end
 
   private
 
-  def fetch_and_sort_entries
-    List.new.fetch_and_sort(@option.is_all, @option.is_reverse)
+  def display_long_list
+    long_list = LongList.new(is_all: @option.is_all, is_reverse: @option.is_reverse)
+    puts long_list.format_total_block_kbyte
+    puts long_list.format
   end
 
-  def display_list(entries)
-    if @option.is_long
-      display_long_list(entries)
-    else
-      display_short_list(entries)
-    end
-  end
-
-  def display_long_list(entries)
-    puts LongList.new(entries).format_total_block_kbyte
-    entry_details = create_entry_details(entries)
-    puts LongList.new(entry_details).format
-  end
-
-  def create_entry_details(entries)
-    entries.map do |entry|
-      entry_detail = Entry.new(entry)
-      entry_detail.load_details
-      entry_detail
-    end
-  end
-
-  def display_short_list(entries)
-    puts ShortList.new(entries).format
+  def display_short_list
+    puts ShortList.new(is_all: @option.is_all, is_reverse: @option.is_reverse).format
   end
 end

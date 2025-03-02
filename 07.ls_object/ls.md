@@ -4,29 +4,28 @@ classDiagram
         -args: Array
         -option: Option
         +run(): String
-        -fetch_and_sort_entries(): Array
-        -display_list(entries: Array)
-        -display_long_list(entries: Array)
-        -create_entry_details(entries: Array): Array
-        -display_short_list(entries: Array)
+        -display_long_list(entries: List)
+        -display_short_list(entries: List)
     }
     class Option {
-        -all: Boolean
-        -reverse: Boolean
-        -long: Boolean
-        +all(): Boolean
-        +reverse(): Boolean
-        +long(): Boolean
+        -is_all: Boolean
+        -is_reverse: Boolean
+        -is_long: Boolean
+        +is_all(): Boolean
+        +is_reverse(): Boolean
+        +is_long(): Boolean
         -parse(args: Array): OptionPaser
     }
     class List {
+        -is_all: Boolean
+        -is_reverse: Boolean
         -entries: Array
-        +fetch_and_sort(is_all: Boolean, is_reverse: Boolean): Array
         +format(): String
+        #entries(): Array
+        -fetch_and_sort(): Array
     }
     class ShortList {
         -COLUMNS: Integer
-        -columns: Integer
         +format(): String
         -calculate_max_name_length(entries: Array): Integer
         -build_list(rows: Integer, entries: Array, max_entry_length: Integer): Array
@@ -34,7 +33,6 @@ classDiagram
     }
     class LongList {
         -KBYTE_PER_BLOCK: Float
-        -kbyte_per_block: Float
         +format_total_block_kbyte(): String
         +format(): String
         -calculate_total_block_kbyte(entries: Array): Integer

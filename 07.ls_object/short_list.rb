@@ -1,22 +1,19 @@
 # frozen_string_literal: true
 
-require_relative 'list'
-
 class ShortList < List
-  COLUMNS = 3
-
-  def initialize(entries)
-    super(entries)
-    @columns = COLUMNS
+  def initialize(is_all: false, is_reverse: false)
+    super(is_all: is_all, is_reverse: is_reverse)
   end
 
   def format
-    rows = (@entries.size.to_f / @columns).ceil
-    list = build_list(rows, @entries, calculate_max_name_length(@entries))
+    rows = (entries.size.to_f / COLUMNS).ceil
+    list = build_list(rows, entries, calculate_max_name_length(entries))
     list_to_string(list)
   end
 
   private
+
+  COLUMNS = 3
 
   def calculate_max_name_length(entries)
     entries.map(&:length).max
