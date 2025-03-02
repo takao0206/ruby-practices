@@ -1,6 +1,6 @@
 ```mermaid
 classDiagram
-    class Ls {
+    class LsCommand {
         -args: Array
         -option: Option
         +run(): String
