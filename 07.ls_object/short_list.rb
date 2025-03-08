@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class ShortList < List
+  COLUMNS = 3
+  private_constant :COLUMNS
+
   def initialize(is_all: false, is_reverse: false)
     super(is_all: is_all, is_reverse: is_reverse)
   end
@@ -12,8 +15,6 @@ class ShortList < List
   end
 
   private
-
-  COLUMNS = 3
 
   def build_list(rows, entries)
     list = create_list(rows, entries)
