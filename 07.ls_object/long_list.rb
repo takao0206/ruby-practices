@@ -2,20 +2,24 @@
 
 require 'date'
 
-class LongList < List
+class LongList
+  include EntryList
+
   KBYTE_PER_BLOCK = 512 / 1024.to_f
   private_constant :KBYTE_PER_BLOCK
 
   def initialize(is_all: false, is_reverse: false)
-    super(is_all: is_all, is_reverse: is_reverse)
+    @is_all = is_all
+    @is_reverse = is_reverse
+    @entries = fetch_and_sort
   end
 
   def format_total_block_kbyte
-    "total #{calculate_total_block_kbyte(entries)}"
+    "total #{calculate_total_block_kbyte}"
   end
 
   def format
-    entry_details = entries.map do |entry|
+    entry_details = @entries.map do |entry|
       entry_detail = Entry.new(entry)
       entry_detail.load_details
       entry_detail.to_h
@@ -26,8 +30,20 @@ class LongList < List
 
   private
 
-  def calculate_total_block_kbyte(entries)
-    entries.sum do |entry|
+  def fetch_and_sort
+    @entries =
+      if @is_all
+        Dir.entries(Dir.pwd)
+      else
+        Dir.children(Dir.pwd).reject { |file| file.start_with?('.') }
+      end
+    @entries.sort_by! { |entry| entry.dup.delete('.') }
+    @entries.reverse! if @is_reverse
+    @entries
+  end
+
+  def calculate_total_block_kbyte
+    @entries.sum do |entry|
       calculate_entry_block_kbyte(entry)
     end
   end

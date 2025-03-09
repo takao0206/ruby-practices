@@ -1,29 +1,33 @@
 # frozen_string_literal: true
 
-class ShortList < List
+class ShortList
+  include EntryList
+
   COLUMNS = 3
   private_constant :COLUMNS
 
   def initialize(is_all: false, is_reverse: false)
-    super(is_all: is_all, is_reverse: is_reverse)
+    @is_all = is_all
+    @is_reverse = is_reverse
+    @entries = fetch_and_sort
   end
 
   def format
-    rows = (entries.size.to_f / COLUMNS).ceil
-    list = build_list(rows, entries)
+    rows = (@entries.size.to_f / COLUMNS).ceil
+    list = create_formatted_list(rows)
     list_to_string(list)
   end
 
   private
 
-  def build_list(rows, entries)
-    list = create_list(rows, entries)
+  def create_formatted_list(rows)
+    list = create_list(rows)
     format_list(list)
   end
 
-  def create_list(rows, entries)
+  def create_list(rows)
     list = Array.new(rows) { [] }
-    entries.each_with_index do |entry, index|
+    @entries.each_with_index do |entry, index|
       col, row = index.divmod(rows)
       list[row][col] = entry
     end

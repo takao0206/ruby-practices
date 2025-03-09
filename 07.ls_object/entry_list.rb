@@ -1,22 +1,6 @@
 # frozen_string_literal: true
 
-class List
-  def initialize(is_all: false, is_reverse: false)
-    @is_all = is_all
-    @is_reverse = is_reverse
-    @entries = fetch_and_sort
-  end
-
-  def format
-    raise NotImplementedError, "#{self.class} must implement format method."
-  end
-
-  protected
-
-  attr_reader :entries
-
-  private
-
+module EntryList
   def fetch_and_sort
     @entries =
       if @is_all
