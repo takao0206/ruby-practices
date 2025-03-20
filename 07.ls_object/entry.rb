@@ -3,13 +3,10 @@
 require 'etc'
 
 class Entry
-  attr_reader :type, :permissions, :nlink, :user, :group, :size, :mtime, :name
+  attr_reader :entry, :type, :permissions, :nlink, :user, :group, :size, :mtime, :name
 
   def initialize(entry)
     @entry = entry
-  end
-
-  def load_details
     entry_stat = File.lstat(File.join(Dir.pwd, @entry))
     @type = convert_filetype_to_char(entry_stat.ftype)
     @permissions = convert_octal_to_rwx(entry_stat.mode.to_s(8).slice(-4, 4).chars)
@@ -19,19 +16,6 @@ class Entry
     @size = entry_stat.size
     @mtime = format_mtime(entry_stat.mtime)
     @name = entry_stat.symlink? ? "#{@entry} -> #{File.readlink(@entry)}" : @entry
-  end
-
-  def to_h
-    {
-      type: @type,
-      permissions: @permissions,
-      nlink: @nlink,
-      user: @user,
-      group: @group,
-      size: @size,
-      mtime: @mtime,
-      name: @name
-    }
   end
 
   private

@@ -3,15 +3,11 @@
 require 'date'
 
 class LongList
-  include EntryList
-
   KBYTE_PER_BLOCK = 512 / 1024.to_f
   private_constant :KBYTE_PER_BLOCK
 
-  def initialize(is_all: false, is_reverse: false)
-    @is_all = is_all
-    @is_reverse = is_reverse
-    @entries = fetch_and_sort
+  def initialize(entries)
+    @entries = entries
   end
 
   def format_total_block_kbyte
@@ -19,32 +15,15 @@ class LongList
   end
 
   def format
-    entry_details = @entries.map do |entry|
-      entry_detail = Entry.new(entry)
-      entry_detail.load_details
-      entry_detail.to_h
-    end
-    max_col_lengths = calculate_max_col_lengths(entry_details)
-    format_entry_details(entry_details, max_col_lengths)
+    max_col_lengths = calculate_max_col_lengths(@entries)
+    format_entry_details(@entries, max_col_lengths)
   end
 
   private
 
-  def fetch_and_sort
-    @entries =
-      if @is_all
-        Dir.entries(Dir.pwd)
-      else
-        Dir.children(Dir.pwd).reject { |file| file.start_with?('.') }
-      end
-    @entries.sort_by! { |entry| entry.dup.delete('.') }
-    @entries.reverse! if @is_reverse
-    @entries
-  end
-
   def calculate_total_block_kbyte
     @entries.sum do |entry|
-      calculate_entry_block_kbyte(entry)
+      calculate_entry_block_kbyte(entry.entry)
     end
   end
 
@@ -53,24 +32,27 @@ class LongList
     (File.lstat(file_path).blocks * KBYTE_PER_BLOCK).floor
   end
 
-  def calculate_max_col_lengths(entry_details)
+  def calculate_max_col_lengths(entries)
     max_col_lengths = {}
-    entry_details.first.each_key do |key|
-      max_col_lengths[key] = entry_details.map { |detail| detail[key].to_s.length }.max
+    keys = %i[type permissions nlink user group size mtime name]
+    keys.each do |key|
+      max_col_lengths[key] = entries.map do |entry|
+        entry.instance_variable_get("@#{key}").to_s.length
+      end.max
     end
     max_col_lengths
   end
 
-  def format_entry_details(entry_details, max_col_lengths)
-    entry_details.map do |detail|
-      "#{detail[:type]}" \
-      "#{detail[:permissions].to_s.ljust(max_col_lengths[:permissions])} " \
-      "#{detail[:nlink].to_s.rjust(max_col_lengths[:nlink])} " \
-      "#{detail[:user].to_s.ljust(max_col_lengths[:user])} " \
-      "#{detail[:group].to_s.ljust(max_col_lengths[:group])} " \
-      "#{detail[:size].to_s.rjust(max_col_lengths[:size])} " \
-      "#{detail[:mtime].to_s.ljust(max_col_lengths[:mtime])} " \
-      "#{detail[:name].to_s.ljust(max_col_lengths[:name])}"
+  def format_entry_details(entries, max_col_lengths)
+    entries.map do |entry|
+      "#{entry.type}" \
+      "#{entry.permissions.to_s.ljust(max_col_lengths[:permissions])} " \
+      "#{entry.nlink.to_s.rjust(max_col_lengths[:nlink])} " \
+      "#{entry.user.to_s.ljust(max_col_lengths[:user])} " \
+      "#{entry.group.to_s.ljust(max_col_lengths[:group])} " \
+      "#{entry.size.to_s.rjust(max_col_lengths[:size])} " \
+      "#{entry.mtime.to_s.ljust(max_col_lengths[:mtime])} " \
+      "#{entry.name.to_s.ljust(max_col_lengths[:name])}"
     end.join("\n")
   end
 end

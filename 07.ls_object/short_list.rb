@@ -1,15 +1,11 @@
 # frozen_string_literal: true
 
 class ShortList
-  include EntryList
-
   COLUMNS = 3
   private_constant :COLUMNS
 
-  def initialize(is_all: false, is_reverse: false)
-    @is_all = is_all
-    @is_reverse = is_reverse
-    @entries = fetch_and_sort
+  def initialize(entries)
+    @entries = entries
   end
 
   def format
@@ -38,7 +34,7 @@ class ShortList
     col_max_lengths = calculate_column_max_lengths(list)
     list.map do |row|
       row.map.with_index do |entry, col|
-        entry ? entry.ljust(col_max_lengths[col]) : ''.ljust(col_max_lengths[col])
+        entry ? entry.entry.ljust(col_max_lengths[col]) : ''.ljust(col_max_lengths[col])
       end
     end
   end
@@ -47,7 +43,7 @@ class ShortList
     col_max_lengths = Array.new(COLUMNS, 0)
     list.each do |row|
       row.each_with_index do |entry, col|
-        col_max_lengths[col] = [col_max_lengths[col], entry.size].max if entry
+        col_max_lengths[col] = [col_max_lengths[col], entry.entry.size].max if entry
       end
     end
     col_max_lengths
