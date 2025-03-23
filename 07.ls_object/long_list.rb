@@ -15,8 +15,8 @@ class LongList
   end
 
   def format
-    max_col_lengths = calculate_max_col_lengths(@entries)
-    format_entry_details(@entries, max_col_lengths)
+    max_col_lengths = calculate_max_col_lengths
+    format_entry_details(max_col_lengths)
   end
 
   private
@@ -32,19 +32,19 @@ class LongList
     (File.lstat(file_path).blocks * KBYTE_PER_BLOCK).floor
   end
 
-  def calculate_max_col_lengths(entries)
+  def calculate_max_col_lengths
     max_col_lengths = {}
     keys = %i[type permissions nlink user group size mtime name]
     keys.each do |key|
-      max_col_lengths[key] = entries.map do |entry|
+      max_col_lengths[key] = @entries.map do |entry|
         entry.instance_variable_get("@#{key}").to_s.length
       end.max
     end
     max_col_lengths
   end
 
-  def format_entry_details(entries, max_col_lengths)
-    entries.map do |entry|
+  def format_entry_details(max_col_lengths)
+    @entries.map do |entry|
       "#{entry.type}" \
       "#{entry.permissions.to_s.ljust(max_col_lengths[:permissions])} " \
       "#{entry.nlink.to_s.rjust(max_col_lengths[:nlink])} " \
